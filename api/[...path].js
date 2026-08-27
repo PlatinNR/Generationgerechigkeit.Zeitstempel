@@ -204,8 +204,13 @@ async function handler(req, res) {
 
     const user = await requireAuth(req);
     if (!user) return sendError(res, 401, 'Nicht angemeldet');
-    // Tagesabrechnung: abgeschlossene Werktage ins Konto buchen
-    await settleDays();
+    // Tagesabrechnung: abgeschlossene Werktage ins Konto buchen.
+    // Fehler hier dürfen niemals andere Funktionen blockieren.
+    try {
+      await settleDays();
+    } catch (e) {
+      console.error('settleDays:', e.message);
+    }
     const isAdmin = user.role === 'admin';
     const isManager = user.role === 'manager';
     const isStaff = user.role === 'mitarbeiter';
