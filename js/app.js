@@ -496,10 +496,10 @@ function updateLiveKPIs() {
   const wb = weekBalance(S.me.id, mw, entriesForUser(S.me.id), absencesForUser(S.me.id), liveExtraMinutes());
   if (wb) {
     const kpiDiff = $('#kpiDiff');
-    kpiDiff.textContent = (wb.diff >= 0 ? '+' : '') + minToHM(Math.abs(wb.diff));
+    kpiDiff.textContent = (wb.diff >= 0 ? '+' : '-') + minToHM(Math.abs(wb.diff));
     kpiDiff.className = 'kpi-value ' + (wb.diff > 0 ? 'pos' : wb.diff < 0 ? 'neg' : '');
     const kpiWeek = $('#kpiWeekDiff');
-    kpiWeek.textContent = (wb.total >= 0 ? '+' : '') + minToHM(Math.abs(wb.total));
+    kpiWeek.textContent = (wb.total >= 0 ? '+' : '-') + minToHM(Math.abs(wb.total));
     kpiWeek.className = 'kpi-value ' + (wb.total > 0 ? 'pos' : wb.total < 0 ? 'neg' : '');
   }
 }
