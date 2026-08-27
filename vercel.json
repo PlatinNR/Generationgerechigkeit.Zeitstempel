@@ -2,6 +2,9 @@
   "version": 2,
   "framework": null,
   "buildCommand": null,
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/[...path].js" }
+  ],
   "functions": {
     "api/[...path].js": {
       "maxDuration": 60
