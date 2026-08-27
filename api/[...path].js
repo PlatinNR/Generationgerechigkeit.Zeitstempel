@@ -8,8 +8,6 @@
 const crypto = require('crypto');
 const db = require('../lib/db');
 
-module.exports.config = { runtime: 'nodejs' };
-
 /* --------------------------------------------------------------------------
    Hilfsfunktionen
    -------------------------------------------------------------------------- */
@@ -527,3 +525,4 @@ async function handler(req, res) {
 }
 
 module.exports = handler;
+module.exports.config = { runtime: 'nodejs' };
