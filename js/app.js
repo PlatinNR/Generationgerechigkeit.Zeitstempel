@@ -1264,11 +1264,14 @@ function bindEvents() {
     const role = $('#uRole').value;
     const weeklyHours = parseHoursInput($('#uHours').value);
     const balance = parseHoursInput($('#uBalance').value);
-    if (!name || !password) { alert('Name und Passwort ausfüllen.'); return; }
-    if (isNaN(weeklyHours) || weeklyHours <= 0 || weeklyHours > 80) { alert('Wochenstunden ungültig (Format z. B. 38:30).'); return; }
-    if (isNaN(balance)) { alert('Stundenstand ungültig (Format z. B. 10:00 oder 10.5).'); return; }
-    if (username.length < 3) { alert('Name zu kurz für einen Benutzernamen (min. 3 Zeichen).'); return; }
-    if (S.users.some(u => u.username === username)) { alert('Benutzername "' + username + '" bereits vergeben.'); return; }
+    if (!name) { alert('Fehler im Feld „Name": Bitte Namen eingeben.'); return; }
+    if (!password) { alert('Fehler im Feld „Passwort": Bitte Passwort eingeben.'); return; }
+    if (password.length < 6) { alert('Fehler im Feld „Passwort": Mindestens 6 Zeichen.'); return; }
+    if (isNaN(weeklyHours)) { alert('Fehler im Feld „Wochenstunden": Bitte HH:MM angeben (z. B. 38:30).'); return; }
+    if (weeklyHours <= 0 || weeklyHours > 80) { alert('Fehler im Feld „Wochenstunden": Wert muss zwischen 0 und 80 Stunden liegen.'); return; }
+    if (isNaN(balance)) { alert('Fehler im Feld „Stundenstand": Bitte HH:MM angeben (z. B. 10:00).'); return; }
+    if (username.length < 3) { alert('Fehler im Feld „Name": Zu kurz für einen Benutzernamen (min. 3 Zeichen).'); return; }
+    if (S.users.some(u => u.username === username)) { alert('Fehler im Feld „Name": Benutzername "' + username + '" ist bereits vergeben.'); return; }
     try {
       await API.createUser({ name, username, password, role, weeklyHours, balance });
       $('#uName').value = '';
@@ -1301,20 +1304,19 @@ function bindEvents() {
     if (!u) return;
     const isSelf = editUserId === S.me.id;
     const name = $('#euName').value.trim();
-    const username = deriveUsername(name);
     const weeklyHours = parseHoursInput($('#euHours').value);
-    if (isNaN(weeklyHours) || weeklyHours <= 0 || weeklyHours > 80) { alert('Wochenstunden ungültig (Format z. B. 38:30).'); return; }
+    // Benutzername bleibt beim Bearbeiten STABIL – er wird nur beim Anlegen aus dem Namen abgeleitet
+    if (!name) { alert('Fehler im Feld „Name": Bitte Namen eingeben.'); return; }
+    if (isNaN(weeklyHours)) { alert('Fehler im Feld „Wochen-Soll": Bitte HH:MM angeben (z. B. 38:30).'); return; }
+    if (weeklyHours <= 0 || weeklyHours > 80) { alert('Fehler im Feld „Wochen-Soll": Wert muss zwischen 0 und 80 Stunden liegen.'); return; }
     const payload = {
       name,
-      username,
       weeklyHours,
     };
     if (!isSelf) {
       payload.role = $('#euRole').value;
       payload.active = $('#euStatus').value === 'true';
     }
-    if (username.length < 3) { alert('Name zu kurz für Benutzernamen.'); return; }
-    if (S.users.some(u2 => u2.id !== editUserId && u2.username === username)) { alert('Benutzername "' + username + '" bereits vergeben.'); return; }
     try {
       await API.updateUser(editUserId, payload);
       $('#editUserDialog').close();
@@ -1328,7 +1330,7 @@ function bindEvents() {
   $('#hoursApply').addEventListener('click', async () => {
     if (!hoursUserId) return;
     const amount = parseHoursInput($('#hoursAmount').value);
-    if (!amount || amount <= 0) { alert('Bitte eine gültige Stundenzahl eingeben (z. B. 1:30 oder 2.5).'); return; }
+    if (!amount || amount <= 0) { alert('Fehler im Feld „Stunden": Bitte HH:MM angeben (z. B. 1:30 oder 2).'); return; }
     const u = S.users.find(x => x.id === hoursUserId);
     if (!u) return;
     const newBalance = (u.balance || 0) + (hoursSign > 0 ? amount : -amount);
