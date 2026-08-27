@@ -1,0 +1,17 @@
+{
+  "name": "zeitaufnahme",
+  "version": "1.0.0",
+  "description": "Interne Zeiterfassung – Stiftung Generationengerechtigkeit",
+  "private": true,
+  "main": "api/[...path].js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "vercel": "^34.0.0"
+  }
+}

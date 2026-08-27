@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zeitaufnahme · Stiftung Generationengerechtigkeit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ======================= Anmeldung ======================= -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="logo-mark">Z</div>
+      <div class="login-brand-text">
+        <h1>Zeitaufnahme</h1>
+        <p>Stiftung Generationengerechtigkeit</p>
+      </div>
+    </div>
+    <form id="loginForm" class="login-form">
+      <div class="field">
+        <label for="loginUser">Benutzername</label>
+        <input type="text" id="loginUser" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Passwort</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPass" autocomplete="current-password" required>
+          <button type="button" class="pw-toggle" id="pwToggle" aria-label="Passwort anzeigen">&#128065;</button>
+        </div>
+        <label class="check-row" style="margin-top:4px">
+          <input type="checkbox" id="pwShow">
+          <span>Passwort anzeigen</span>
+        </label>
+      </div>
+      <p id="loginError" class="login-error hidden"></p>
+      <button type="submit" class="button_theme button-block">Anmelden</button>
+    </form>
+    <p class="login-hint">Interne Zeiterfassung – Zugang wird vom Administrator vergeben.</p>
+  </div>
+</div>
+
+<!-- ======================= Anwendung ======================= -->
+<div id="app" class="app hidden">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-mark">Z</div>
+      <div class="sidebar-brand-text">
+        <strong>Zeitaufnahme</strong>
+        <span>Arbeitszeiten</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebarNav">
+      <a href="#" data-view="stempeln" class="nav-item current"><span class="nav-dot"></span>Stempeln</a>
+      <a href="#" data-view="woche" class="nav-item"><span class="nav-dot"></span>Meine Woche</a>
+      <a href="#" data-view="abwesenheit" class="nav-item"><span class="nav-dot"></span>Abwesenheit</a>
+      <a href="#" data-view="team" class="nav-item nav-mgmt" data-roles="admin,manager"><span class="nav-dot"></span>Team</a>
+      <a href="#" data-view="personen" class="nav-item nav-mgmt" data-roles="admin"><span class="nav-dot"></span>Personen Konfigurieren</a>
+      <a href="#" data-view="anlegen" class="nav-item nav-mgmt" data-roles="admin"><span class="nav-dot"></span>Personen Anlegen</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-chip-info">
+          <strong id="meName">–</strong>
+          <span id="meRole" class="role-badge role-staff">–</span>
+        </div>
+        <button type="button" id="logoutBtn" class="logout-btn" title="Abmelden">Logout</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h2 id="viewTitle">Heute</h2>
+        <span id="viewSubtitle" class="topbar-sub">–</span>
+      </div>
+      <div class="topbar-right">
+        <div class="notif-wrap" id="notifWrap">
+          <button type="button" class="notif-bell" id="notifBell" aria-label="Benachrichtigungen">
+            <span class="notif-bell-icon">&#128276;</span>
+            <span class="notif-badge hidden" id="notifBadge">0</span>
+          </button>
+          <div class="notif-dropdown hidden" id="notifDropdown">
+            <div class="notif-dropdown-head">Benachrichtigungen</div>
+            <div class="notif-list" id="notifList"><p class="empty-state">Keine Benachrichtigungen.</p></div>
+          </div>
+        </div>
+        <div class="topbar-clock">
+          <span class="clock-time" id="clockTime">–</span>
+          <span class="clock-date" id="clockDate">–</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="view-container" id="viewContainer">
+
+      <!-- ============ Stempeln (Stechuhr + manuelle Einträge) ============ -->
+      <section id="view-stempeln" class="view">
+        <div class="kpi-row">
+          <div class="kpi"><span class="kpi-label">Soll heute</span><span class="kpi-value" id="kpiSoll">–</span></div>
+          <div class="kpi"><span class="kpi-label">Ist heute</span><span class="kpi-value" id="kpiIst">–</span></div>
+          <div class="kpi"><span class="kpi-label">Wochenbilanz</span><span class="kpi-value" id="kpiDiff">–</span></div>
+          <div class="kpi"><span class="kpi-label">Kontobilanz</span><span class="kpi-value" id="kpiWeekDiff">–</span></div>
+        </div>
+
+        <div class="panel punch-panel">
+          <div class="panel-head">
+            <h3>Stechuhr</h3>
+            <span class="live-badge" id="punchStatus">Bereit</span>
+          </div>
+          <div class="punch-time" id="punchTimer">00:00:00</div>
+          <div class="punch-buttons" id="punchButtons">
+            <button type="button" class="button_theme button-big" id="btnStartWork">Arbeitsbeginn</button>
+          </div>
+          <div class="punch-log" id="punchLog"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Heutige Einträge</h3>
+            <span class="panel-hint" id="todayEntryCount">0</span>
+          </div>
+          <div class="entry-list" id="todayList"><p class="empty-state">Noch keine Einträge.</p></div>
+        </div>
+      </section>
+
+      <!-- ============ Meine Woche ============ -->
+      <section id="view-woche" class="view hidden">
+        <div class="panel">
+          <div class="week-nav">
+            <button type="button" class="nav-btn" id="weekPrev">Vorwoche</button>
+            <div class="week-nav-title">
+              <h3 id="weekLabel">–</h3>
+              <button type="button" class="nav-btn nav-btn-small" id="weekTodayBtn">Diese Woche</button>
+            </div>
+            <button type="button" class="nav-btn" id="weekNext">Nächste Woche</button>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi"><span class="kpi-label">Soll</span><span class="kpi-value" id="wkSoll">–</span></div>
+          <div class="kpi"><span class="kpi-label">Gutgeschrieben</span><span class="kpi-value" id="wkGut">–</span></div>
+          <div class="kpi"><span class="kpi-label">Effektiv</span><span class="kpi-value" id="wkEff">–</span></div>
+          <div class="kpi"><span class="kpi-label">Gesamtbilanz</span><span class="kpi-value" id="wkDiff">–</span></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Zeitstrahl</h3><span class="panel-hint">Überstunden / Fehlstunden · Skala −100 h bis +100 h</span></div>
+          <div id="weekZeitstrahl"></div>
+          <p class="zt-info" id="wkBreakdown"></p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Wochenliste</h3><span class="panel-hint" id="wkCount">–</span></div>
+          <div class="table-wrap">
+            <table class="data-table" id="weekTable">
+              <thead>
+                <tr><th>Tag</th><th>Arbeit</th><th>Pause</th><th>Abwesenheit</th><th>Gutschrift</th><th>Aktionen</th></tr>
+              </thead>
+              <tbody id="weekBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Abwesenheit ============ -->
+      <section id="view-abwesenheit" class="view hidden">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h3>Abwesenheit eintragen</h3><span class="panel-hint">Urlaub / Krankheit / Fehltag</span></div>
+            <form id="absenceForm" class="entry-form">
+              <div id="absenceUserField" class="field hidden">
+                <label for="aUser">Person</label>
+                <select id="aUser"></select>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="aType">Typ</label>
+                  <select id="aType">
+                    <option value="urlaub">Urlaub</option>
+                    <option value="krank">Krankheit</option>
+                    <option value="fehltag">Fehltag</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="aFrom">Von</label>
+                  <input type="date" id="aFrom" required>
+                </div>
+                <div class="field">
+                  <label for="aTo">Bis</label>
+                  <input type="date" id="aTo" required>
+                </div>
+                <div class="field">
+                  <label for="aNote">Notiz (optional)</label>
+                  <input type="text" id="aNote">
+                </div>
+              </div>
+              <div id="aCreditField" class="field credit-field hidden">
+                <label class="check-row">
+                  <input type="checkbox" id="aCredit">
+                  <span>Gutgeschriebene Fehlstunden (nicht gutgeschrieben = zählt als Fehlstunde)</span>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="button_theme">Eintragen</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h3>Ausfälle der Woche</h3><span class="panel-hint" id="absCount">–</span></div>
+            <div class="entry-list" id="absenceList"><p class="empty-state">Keine Ausfälle.</p></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Alle Abwesenheiten</h3><span class="panel-hint">Letzte 8 Wochen</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Datum</th><th>Person</th><th>Typ</th><th>Gutschrift</th><th>Notiz</th><th>Aktionen</th></tr></thead>
+              <tbody id="absenceAllBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Team ============ -->
+      <section id="view-team" class="view hidden">
+        <div class="panel">
+          <div class="week-nav">
+            <button type="button" class="nav-btn" id="teamPrev">Vorwoche</button>
+            <div class="week-nav-title">
+              <h3 id="teamWeekLabel">–</h3>
+              <button type="button" class="nav-btn nav-btn-small" id="teamTodayBtn">Diese Woche</button>
+            </div>
+            <button type="button" class="nav-btn" id="teamNext">Nächste Woche</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Manuelle Zeiterfassung</h3><span class="panel-hint">nur Admin/Manager · überschreibt bestehende Einträge</span></div>
+          <form id="teamEntryForm" class="entry-form">
+            <div class="form-grid form-grid-3">
+              <div class="field">
+                <label for="tUser">Person</label>
+                <select id="tUser"></select>
+              </div>
+              <div class="field">
+                <label for="tDate">Datum</label>
+                <input type="date" id="tDate">
+              </div>
+              <div class="field">
+                <label for="tType">Art</label>
+                <select id="tType">
+                  <option value="work">Arbeit</option>
+                  <option value="break">Pause</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="tStart">Start</label>
+                <input type="time" id="tStart">
+              </div>
+              <div class="field">
+                <label for="tEnd">Ende</label>
+                <input type="time" id="tEnd">
+              </div>
+              <div class="field">
+                <label for="tNote">Notiz (optional)</label>
+                <input type="text" id="tNote">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="button_theme">Manuell eintragen</button>
+            </div>
+            <p class="dialog-note" style="margin-top:12px">Bestehende Einträge dieser Person am selben Tag werden überschrieben. Die Person wird benachrichtigt.</p>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Team-Übersicht</h3><span class="panel-hint" id="teamCount">–</span></div>
+          <div class="table-wrap">
+            <table class="data-table team-table">
+              <thead>
+                <tr>
+                  <th>Person</th>
+                  <th>Rolle</th>
+                  <th>Soll</th>
+                  <th>Effektiv</th>
+                  <th>Bilanz</th>
+                  <th>Zeitstrahl</th>
+                </tr>
+              </thead>
+              <tbody id="teamBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Detail – Tag <span id="teamDetailDay"></span></h3><span class="panel-hint">Klick auf Zeile oben</span></div>
+          <div id="teamDetail"></div>
+        </div>
+      </section>
+
+      <!-- ============ Personen Konfigurieren (Admin) ============ -->
+      <section id="view-personen" class="view hidden">
+        <div class="panel">
+          <div class="panel-head"><h3>Personenliste</h3><span class="panel-hint" id="userCount">–</span></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Rolle</th><th>Wochen-Soll (h)</th><th>Stundenstand</th><th>Status</th><th>Aktionen</th></tr></thead>
+              <tbody id="userListBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Rohdaten entnehmen</h3><span class="panel-hint">Alle Daten / Zeitraum</span></div>
+          <div class="report-actions">
+            <div class="report-field">
+              <label for="rFrom">Von</label>
+              <input type="date" id="rFrom">
+            </div>
+            <div class="report-field">
+              <label for="rTo">Bis</label>
+              <input type="date" id="rTo">
+            </div>
+            <button type="button" class="button_theme" id="btnExportCsv">Exceldaten</button>
+            <button type="button" class="button" id="btnExportJson">Json daten</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Personen Anlegen (Admin) ============ -->
+      <section id="view-anlegen" class="view hidden">
+        <div class="panel">
+          <div class="panel-head"><h3>Person anlegen</h3><span class="panel-hint">Zugangsdaten direkt an die Person übergeben</span></div>
+          <form id="userForm" class="entry-form">
+            <div class="form-grid form-grid-3">
+              <div class="field">
+                <label for="uName">Name</label>
+                <input type="text" id="uName" required>
+                <span class="field-hint" id="uUsernameHint"></span>
+              </div>
+              <div class="field">
+                <label for="uPass">Passwort</label>
+                <input type="text" id="uPass" required>
+              </div>
+              <div class="field">
+                <label for="uRole">Rolle</label>
+                <select id="uRole">
+                  <option value="mitarbeiter">Mitarbeiter</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="uHours">Wochenstunden (Soll, HH:MM)</label>
+                <input type="text" id="uHours" placeholder="z. B. 38:30" value="38:30" required>
+              </div>
+              <div class="field">
+                <label for="uBalance">Aktueller Stundenstand (HH:MM)</label>
+                <input type="text" id="uBalance" placeholder="z. B. 10:00" value="0">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="button_theme">Person anlegen</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<dialog id="editUserDialog" class="dialog">
+  <form method="dialog" class="dialog-inner" id="editUserForm">
+    <div class="panel-head dialog-head">
+      <h3>Person bearbeiten</h3>
+      <button type="button" class="dialog-close" data-close="editUserDialog" aria-label="Schließen">&times;</button>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="euName">Name</label>
+        <input type="text" id="euName">
+        <span class="field-hint" id="euUsernameHint"></span>
+      </div>
+      <div class="field">
+        <label for="euRole">Rolle</label>
+        <select id="euRole">
+          <option value="admin">Admin</option>
+          <option value="manager">Manager</option>
+          <option value="mitarbeiter">Mitarbeiter</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="euHours">Wochen-Soll (HH:MM)</label>
+        <input type="text" id="euHours" placeholder="z. B. 38:30">
+      </div>
+      <div class="field">
+        <label for="euStatus">Status</label>
+        <select id="euStatus">
+          <option value="true">Aktiv</option>
+          <option value="false">Archiviert</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="button_theme" id="euSave">Speichern</button>
+      <button type="button" class="button" data-close="editUserDialog">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="hoursDialog" class="dialog">
+  <form method="dialog" class="dialog-inner">
+    <div class="panel-head dialog-head">
+      <h3 id="hoursTitle">Stunden anpassen</h3>
+      <button type="button" class="dialog-close" data-close="hoursDialog" aria-label="Schließen">&times;</button>
+    </div>
+    <p class="dialog-note" id="hoursNote">–</p>
+    <div class="field">
+      <label for="hoursAmount">Stunden (Format HH:MM)</label>
+      <input type="text" id="hoursAmount" placeholder="z. B. 1:30 oder 2" value="1:00">
+    </div>
+    <div class="form-actions">
+      <button type="button" class="button_theme" id="hoursApply">Übernehmen</button>
+      <button type="button" class="button" data-close="hoursDialog">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="absenceEditDialog" class="dialog">
+  <form method="dialog" class="dialog-inner">
+    <div class="panel-head dialog-head">
+      <h3>Abwesenheit bearbeiten</h3>
+      <button type="button" class="dialog-close" data-close="absenceEditDialog" aria-label="Schließen">&times;</button>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="aeFrom">Von</label>
+        <input type="date" id="aeFrom">
+      </div>
+      <div class="field">
+        <label for="aeTo">Bis</label>
+        <input type="date" id="aeTo">
+      </div>
+      <div class="field">
+        <label for="aeType">Typ</label>
+        <select id="aeType">
+          <option value="urlaub">Urlaub</option>
+          <option value="krank">Krankheit</option>
+          <option value="fehltag">Fehltag</option>
+        </select>
+      </div>
+      <div class="field" id="aeCreditField">
+        <label class="check-row">
+          <input type="checkbox" id="aeCredit">
+          <span>Gutgeschrieben</span>
+        </label>
+      </div>
+      <div class="field field-note">
+        <label for="aeNote">Notiz (optional)</label>
+        <input type="text" id="aeNote">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="button_theme" id="aeSave">Speichern</button>
+      <button type="button" class="button" data-close="absenceEditDialog">Abbrechen</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

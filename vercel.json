@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": null,
+  "functions": {
+    "api/[...path].js": {
+      "maxDuration": 60
+    }
+  }
+}
