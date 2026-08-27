@@ -16,6 +16,7 @@ create table if not exists users (
   password_hash text not null,
   password_history jsonb not null default '[]',
   last_settled_monday text,
+  last_settled_day text,
   created_at timestamptz not null default now(),
   last_login timestamptz
 );

@@ -351,53 +351,61 @@ function dayMinutes(entries, userId, date, type) {
 function weekBalance(userId, weekStart, entries, absences, liveExtra) {
   const user = userById(userId);
   if (!user) return null;
-  const daily = dailyTarget(user);
+  const daily = dailyTarget(user); // Minuten pro Werktag
   const soll = Math.round(user.weeklyHours * 60);
-  let totalWork = 0;
-  let totalBreak = 0;
-  let gut = 0;
+  let gut = 0;         // gearbeitete Minuten (work − break)
+  let weekDiff = 0;    // Wochenbilanz = Summe der Tages-Differenzen (Mo–Fr)
+  let todayLive = 0;   // heutiger Beitrag (live)
   let deficitDays = 0;
   let pendingDays = 0;
   const days = [];
+  const today = dateKey(new Date());
   for (let i = 0; i < 7; i++) {
     const d = addDays(weekStart, i);
     const key = dateKey(d);
+    const dow = d.getDay(); // 0=So, 6=Sa
     let w = dayMinutes(entries, userId, key, 'work');
     const b = dayMinutes(entries, userId, key, 'break');
     if (liveExtra && liveExtra[key]) w += liveExtra[key];
-    totalWork += w;
-    totalBreak += b;
-    const abs = absences.find(a => a.userId === userId && a.dateFrom <= key && key <= a.dateTo);
+    gut += Math.max(0, w - b);
+    let dayDiff = 0;
     let credit = 0;
     let absType = '';
     let absNote = '';
     let absId = null;
     let credited = false;
     let confirmed = false;
+    const abs = absences.find(a => a.userId === userId && a.dateFrom <= key && key <= a.dateTo);
     if (abs) {
       absType = abs.type;
       absNote = abs.note;
       absId = abs.id;
       credited = abs.credited;
       confirmed = abs.status === 'confirmed';
-      if (confirmed && (abs.type === 'urlaub' || abs.type === 'krank' || abs.credited)) {
-        credit = daily;
-      } else if (confirmed && abs.type === 'fehltag' && !abs.credited) {
-        deficitDays++;
-      } else if (!confirmed) {
-        pendingDays++;
-      }
+    }
+    if (dow === 0 || dow === 6) {
+      dayDiff = 0; // Wochenende: kein Soll, kein Beitrag
+    } else if (abs && confirmed && (abs.type === 'urlaub' || abs.type === 'krank' || credited)) {
+      dayDiff = 0; // bestätigt = ausgeglichen
+      credit = daily;
+    } else if (abs && confirmed && abs.type === 'fehltag' && !credited) {
+      dayDiff = -daily; // Fehlstunde
+      deficitDays++;
+    } else if (abs && !confirmed) {
+      dayDiff = 0; // offen = neutral
+      pendingDays++;
     } else {
+      dayDiff = (w - b) - daily; // Arbeit − Tages-Soll
       credit = Math.max(0, w - b);
     }
-    gut += credit;
-    days.push({ key, work: w - b, break: b, absType, absNote, absId, credited, confirmed, credit });
+    weekDiff += dayDiff;
+    if (key === today) todayLive = dayDiff;
+    days.push({ key, work: w - b, break: b, absType, absNote, absId, credited, confirmed, credit, dayDiff });
   }
   const effektiv = gut;
-  const diff = effektiv - soll;
-  const balance = (user.balance || 0) * 60; // Konto in Minuten für minToHM
-  const total = balance;
-  return { user, soll, daily, totalWork, totalBreak, gut, effektiv, diff, balance, total, deficitDays, pendingDays, days };
+  const balance = (user.balance || 0) * 60; // abgerechnetes Konto (Minuten)
+  const total = balance + todayLive;        // Kontobilanz inkl. heutigem Beitrag
+  return { user, soll, daily, gut, effektiv, diff: weekDiff, balance, total, deficitDays, pendingDays, days };
 }
 
 /* --------------------------------------------------------------------------
@@ -514,6 +522,18 @@ function renderPunch() {
   const timer = $('#punchTimer');
   const buttons = $('#punchButtons');
   const log = $('#punchLog');
+
+  // Wochenende: keine Arbeit möglich
+  const dow = new Date().getDay();
+  if ((dow === 0 || dow === 6) && !openWork) {
+    status.textContent = 'Wochenende';
+    status.className = 'live-badge';
+    timer.textContent = '--:--:--';
+    buttons.innerHTML = '';
+    log.textContent = 'Samstag und Sonntag kann nicht gearbeitet werden.';
+    if (window._punchTimer) { clearInterval(window._punchTimer); window._punchTimer = null; }
+    return;
+  }
 
   let runningStartSec = null;
   if (openBreak) {

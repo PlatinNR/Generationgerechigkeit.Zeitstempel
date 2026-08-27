@@ -53,56 +53,56 @@ function mondayOfS(d) {
 function timeToMin(t) { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + m; }
 
 /* --------------------------------------------------------------------------
-   Wochenabrechnung (verbucht abgeschlossene Wochen ins Konto)
+   Tagesabrechnung (verbucht jeden abgeschlossenen Werktag ins Konto)
+   - Werktag (Mo–Fr): Arbeit − Tages-Soll (z. B. 8:00 bei 40h-Woche)
+   - Samstag/Sonntag: kein Soll, kein Beitrag
    -------------------------------------------------------------------------- */
-function weekDiffMinutes(user, monday, entries, absences) {
+function dayDiffMinutes(user, date, entries, absences) {
+  const key = dateKeyS(date);
+  const dow = date.getDay(); // 0=So, 6=Sa
+  if (dow === 0 || dow === 6) return 0; // Wochenende
   const daily = Math.round(user.weeklyHours * 60 / 5);
-  const soll = Math.round(user.weeklyHours * 60);
-  let gut = 0;
-  for (let i = 0; i < 7; i++) {
-    const key = dateKeyS(addDaysS(monday, i));
-    const w = entries.filter(e => e.userId === user.id && e.date === key && e.type === 'work' && e.end != null)
-      .reduce((s, e) => s + Math.max(0, timeToMin(e.end) - timeToMin(e.start)), 0);
-    const b = entries.filter(e => e.userId === user.id && e.date === key && e.type === 'break' && e.end != null)
-      .reduce((s, e) => s + Math.max(0, timeToMin(e.end) - timeToMin(e.start)), 0);
-    const abs = absences.find(a => a.userId === user.id && a.dateFrom <= key && key <= a.dateTo);
-    if (abs && abs.status === 'confirmed' && (abs.type === 'urlaub' || abs.type === 'krank' || abs.credited)) {
-      gut += daily;
-    } else if (abs && abs.status === 'confirmed' && abs.type === 'fehltag' && !abs.credited) {
-      gut += 0;
-    } else if (abs && abs.status !== 'confirmed') {
-      gut += 0;
-    } else {
-      gut += Math.max(0, w - b);
-    }
+  const w = entries.filter(e => e.userId === user.id && e.date === key && e.type === 'work' && e.end != null)
+    .reduce((s, e) => s + Math.max(0, timeToMin(e.end) - timeToMin(e.start)), 0);
+  const b = entries.filter(e => e.userId === user.id && e.date === key && e.type === 'break' && e.end != null)
+    .reduce((s, e) => s + Math.max(0, timeToMin(e.end) - timeToMin(e.start)), 0);
+  const abs = absences.find(a => a.userId === user.id && a.dateFrom <= key && key <= a.dateTo);
+  if (abs && abs.status === 'confirmed' && (abs.type === 'urlaub' || abs.type === 'krank' || abs.credited)) {
+    return 0; // bestätigt = ausgeglichen
   }
-  return gut - soll;
+  if (abs && abs.status === 'confirmed' && abs.type === 'fehltag' && !abs.credited) {
+    return -daily; // nicht gutgeschriebener Fehltag = Fehlstunde
+  }
+  if (abs && abs.status !== 'confirmed') {
+    return 0; // offener Fehlgrund = neutral
+  }
+  return (w - b) - daily; // Arbeit − Tages-Soll
 }
 
-async function settleWeeks() {
+async function settleDays() {
   const users = await db.listUsers();
   if (!users.length) return;
   const entries = await db.listEntries();
   const absences = await db.listAbsences();
-  const curMonday = mondayOfS(new Date());
+  const today = dateKeyS(new Date());
 
   for (const user of users) {
-    let m = user.lastSettledMonday
-      ? addDaysS(new Date(user.lastSettledMonday + 'T00:00:00'), 7)
-      : addDaysS(curMonday, -7);
+    let cur = user.lastSettledDay
+      ? addDaysS(new Date(user.lastSettledDay + 'T00:00:00'), 1)
+      : addDaysS(new Date(today + 'T00:00:00'), -1);
     let changed = false;
-    while (addDaysS(m, 7) <= curMonday) {
-      const diff = weekDiffMinutes(user, m, entries, absences);
+    while (dateKeyS(cur) < today) {
+      const diff = dayDiffMinutes(user, cur, entries, absences);
       if (diff !== 0) {
         user.balance = (user.balance || 0) + diff / 60;
         changed = true;
       }
-      user.lastSettledMonday = dateKeyS(m);
+      user.lastSettledDay = dateKeyS(cur);
       changed = true;
-      m = addDaysS(m, 7);
+      cur = addDaysS(cur, 1);
     }
     if (changed) {
-      await db.updateUser(user.id, { balance: user.balance, last_settled_monday: user.lastSettledMonday });
+      await db.updateUser(user.id, { balance: user.balance, last_settled_day: user.lastSettledDay });
     }
   }
 }
@@ -204,6 +204,8 @@ async function handler(req, res) {
 
     const user = await requireAuth(req);
     if (!user) return sendError(res, 401, 'Nicht angemeldet');
+    // Tagesabrechnung: abgeschlossene Werktage ins Konto buchen
+    await settleDays();
     const isAdmin = user.role === 'admin';
     const isManager = user.role === 'manager';
     const isStaff = user.role === 'mitarbeiter';
@@ -273,6 +275,7 @@ async function handler(req, res) {
           id: uid('u'), username, name, role, weeklyHours, balance,
           salt, passwordHash: hash, passwordHistory: [],
           lastSettledMonday: dateKeyS(mondayOfS(new Date())),
+          lastSettledDay: dateKeyS(new Date()),
         });
         await db.createNotification({ id: uid('n'), userId: nu.id, type: 'account-created', detail: name });
         return sendJSON(res, 201, { user: nu });
@@ -372,6 +375,9 @@ async function handler(req, res) {
           return sendError(res, 403, 'Mitarbeiter können Zeiten nur per Stechuhr erfassen');
         }
         if (!isDate(body.date)) return sendError(res, 400, 'Datum ungültig');
+        // Samstag/Sonntag: keine Arbeit möglich
+        const dow = new Date(body.date + 'T00:00:00').getDay();
+        if (dow === 0 || dow === 6) return sendError(res, 400, 'Am Wochenende kann nicht gearbeitet werden');
         if (!isEntryType(body.type)) return sendError(res, 400, 'Typ ungültig');
         if (!isTime(body.start)) return sendError(res, 400, 'Startzeit ungültig');
         if (body.end !== null && body.end !== undefined && !isTime(body.end)) return sendError(res, 400, 'Endzeit ungültig');
