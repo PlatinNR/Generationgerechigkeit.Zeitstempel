@@ -1,7 +1,7 @@
 'use strict';
 
 /* ==========================================================================
-   Zeitaufnahme · Stiftung Generationengerechtigkeit
+   Zeiterfassung · Stiftung Generationengerechtigkeit
    Node-Server: Statische Dateien + API + Cookie-Login + Rollenprüfung
    Daten liegen in data/data.json (ohne externe Pakete).
    ========================================================================== */
@@ -862,7 +862,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log('');
   console.log('  ================================================');
-  console.log('   Zeitaufnahme · Stiftung Generationengerechtigkeit');
+  console.log('   Zeiterfassung · Stiftung Generationengerechtigkeit');
   console.log(`   Läuft auf http://localhost:${PORT}`);
   console.log('   Standard-Admin: admin / admin123');
   console.log('   Daten: data/data.json');

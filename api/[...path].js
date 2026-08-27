@@ -1,7 +1,7 @@
 'use strict';
 
 /* ==========================================================================
-   Zeitaufnahme · Vercel-Serverless-API
+   Zeiterfassung · Vercel-Serverless-API
    Alle Routen unter /api/... (catch-all) · Daten in Supabase
    ========================================================================== */
 

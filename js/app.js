@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Zeitaufnahme · App-Logik
+   Zeiterfassung · App-Logik
    Rollen: Admin, Manager, Mitarbeiter
    ========================================================================== */
 'use strict';

@@ -1,4 +1,4 @@
-# Zeitaufnahme · Interne Zeiterfassung
+# Zeiterfassung · Interne Zeiterfassung
 
 Zeiterfassung für die Stiftung Generationengerechtigkeit.
 Rollen: **Admin**, **Manager**, **Mitarbeiter** – Login ohne E-Mail, Zugangsdaten vergibt der Admin.

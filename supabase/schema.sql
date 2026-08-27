@@ -1,5 +1,5 @@
 -- ============================================================================
--- Zeitaufnahme · Supabase-Schema
+-- Zeiterfassung · Supabase-Schema
 -- In Supabase ausführen unter: SQL-Editor → New Query → Run
 -- ============================================================================
 
